@@ -15,7 +15,7 @@ fn write_stdin_to_file(binary_path: &std::path::Path) -> std::io::Result<()> {
         .write(true)
         .mode(0o777)
         .create(true)
-        .open(binary_path)?;
+        .open(file_path)?;
     file.write_all(&buffer)
 }
 
