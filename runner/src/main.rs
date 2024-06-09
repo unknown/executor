@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::os::unix::fs::OpenOptionsExt;
 use std::process::{Command, Output};
 
-fn write_stdin_to_file(binary_path: &std::path::Path) -> std::io::Result<()> {
+fn write_stdin_to_file(file_path: &std::path::Path) -> std::io::Result<()> {
     // read stdin to buffer
     let mut buffer = Vec::new();
     let stdin = std::io::stdin();
