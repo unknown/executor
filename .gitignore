@@ -1,4 +1,7 @@
 /target
 
+# templates
+/templates/rust/target
+
 # MAC
 .DS_Store

@@ -27,7 +27,7 @@ fn main() {
     let binary_path = std::path::Path::new("./binary");
 
     if let Err(e) = write_stdin_to_file(binary_path) {
-        eprintln!("Failed to save stdin binary: {}", e.to_string());
+        eprintln!("Failed to save stdin: {}", e.to_string());
         return;
     }
 
