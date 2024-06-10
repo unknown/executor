@@ -2,26 +2,53 @@
 FROM rust:1.66-slim as build
 
 # create empty project
-RUN cargo new app --lib --vcs=none
+RUN cargo new app --vcs=none
 WORKDIR /app
 
-# copy manifests
+# copy root manifests
 COPY ./Cargo.lock ./Cargo.toml ./
 
-# build dependencies to cache them
-RUN cargo build --release --lib
+# create dummy crates
+RUN cargo new builder
+RUN cargo new runner
 
-# copy source files
-COPY ./src ./src
+# copy crate manifests
+COPY ./builder/Cargo.toml ./builder
+COPY ./runner/Cargo.toml ./runner
 
-# build release target
+# build dummy crates to cache dependencies
 RUN cargo build --release
 
-# final base
-FROM debian:bullseye-slim
+# copy crate sources
+COPY ./builder ./builder
+COPY ./runner ./runner
+
+# update timestamps
+RUN touch ./builder/src/main.rs
+RUN touch ./runner/src/main.rs
+
+# build release targets
+RUN cargo build --release
+
+
+# builder base
+FROM rust:1.66-slim as builder
+
+# copy templates folder
+COPY ./templates ./templates
 
 # copy build artifact
-COPY --from=build /app/target/release/executor .
+COPY --from=build /app/target/release/builder .
 
-# set entrypoint to run our binary
-ENTRYPOINT [ "./executor" ]
+# set entrypoint to run program
+ENTRYPOINT [ "./builder" ]
+
+
+# runner base
+FROM debian:bullseye-slim as runner
+
+# copy build artifact
+COPY --from=build /app/target/release/runner .
+
+# set entrypoint to run program
+ENTRYPOINT [ "./runner" ]
