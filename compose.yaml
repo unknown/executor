@@ -1,9 +1,5 @@
 services:
-  builder:
+  executor-rust:
     build:
       context: .
-      target: builder
-  runner:
-    build:
-      context: .
-      target: runner
+      target: executor-rust

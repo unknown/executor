@@ -1,5 +1,5 @@
 [workspace]
 resolver = "2"
 
-members = ["runner", "builder"]
+members = ["executor-rust"]
 exclude = ["templates/"]

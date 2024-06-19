@@ -9,46 +9,32 @@ WORKDIR /app
 COPY ./Cargo.lock ./Cargo.toml ./
 
 # create dummy crates
-RUN cargo new builder
-RUN cargo new runner
+RUN cargo new executor-rust
 
 # copy crate manifests
-COPY ./builder/Cargo.toml ./builder
-COPY ./runner/Cargo.toml ./runner
+COPY ./executor-rust/Cargo.toml ./executor-rust
 
 # build dummy crates to cache dependencies
 RUN cargo build --release
 
 # copy crate sources
-COPY ./builder ./builder
-COPY ./runner ./runner
+COPY ./executor-rust ./executor-rust
 
 # update timestamps
-RUN touch ./builder/src/main.rs
-RUN touch ./runner/src/main.rs
+RUN touch ./executor-rust/src/main.rs
 
 # build release targets
 RUN cargo build --release
 
 
-# builder base
-FROM rust:1.66-slim as builder
+# rust image
+FROM rust:1.66-slim as executor-rust
 
 # copy templates folder
 COPY ./templates ./templates
 
 # copy build artifact
-COPY --from=build /app/target/release/builder .
+COPY --from=build /app/target/release/executor-rust .
 
 # set entrypoint to run program
-ENTRYPOINT [ "./builder" ]
-
-
-# runner base
-FROM debian:bullseye-slim as runner
-
-# copy build artifact
-COPY --from=build /app/target/release/runner .
-
-# set entrypoint to run program
-ENTRYPOINT [ "./runner" ]
+ENTRYPOINT [ "./executor-rust" ]
