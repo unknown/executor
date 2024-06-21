@@ -1,4 +1,5 @@
 /target
+.env
 
 # templates
 /templates/rust/target
