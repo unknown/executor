@@ -48,6 +48,7 @@ dependencies = [
  "nomad-client-rs",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "uuid",
 ]

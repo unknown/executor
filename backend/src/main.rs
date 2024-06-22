@@ -1,26 +1,31 @@
 use std::env;
 
 use nomad_client_rs::{
-    api::job::models::JobCreateRequest,
+    api::job::models::{JobCreateRequest, JobListAllocationsParams},
     models::{Job, RestartPolicy, Task, TaskGroup, Template},
     Config, NomadClient,
 };
 use serde_json::json;
 use uuid::Uuid;
 
-fn create_execute_rust_job(code: &str) -> JobCreateRequest {
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+enum ExecutionError {
+    #[error("Error creating job: {0}")]
+    JobError(String),
+}
+
+fn get_job_id(job_uuid: &Uuid) -> String {
+    return format!("execute-rust-{}", job_uuid.to_string());
+}
+
+fn create_execute_rust_job(job_id: &str, code: &str) -> JobCreateRequest {
     JobCreateRequest {
         job: Some(Job {
-            id: Some("execute-rust".to_string()),
+            id: Some(job_id.to_string()),
             name: Some("execute-rust".to_string()),
             _type: Some("batch".to_string()),
-
-            meta: Some(
-                serde_json::from_value(json!({
-                    "run_uuid": Uuid::new_v4().to_string()
-                }))
-                .unwrap(),
-            ),
 
             task_groups: Some(vec![TaskGroup {
                 name: Some("execute-rust".to_string()),
@@ -64,6 +69,30 @@ fn create_execute_rust_job(code: &str) -> JobCreateRequest {
     }
 }
 
+async fn submit_execute_rust_job(
+    client: &NomadClient,
+    code: &str,
+) -> Result<String, ExecutionError> {
+    let job_id = get_job_id(&Uuid::new_v4());
+    client
+        .job_create(&create_execute_rust_job(&job_id, code))
+        .await
+        .map_err(|error| ExecutionError::JobError(error.to_string()))?;
+
+    let allocations = client
+        .job_list_allocations(&job_id, &JobListAllocationsParams::default())
+        .await
+        .map_err(|error| ExecutionError::JobError(error.to_string()))?;
+
+    let alloc_id = allocations
+        .first()
+        .map(|allocation| allocation.to_owned().id)
+        .ok_or_else(|| ExecutionError::JobError("No allocation created".to_string()))?
+        .ok_or_else(|| ExecutionError::JobError("Allocation has no ID".to_string()))?;
+
+    Ok(alloc_id)
+}
+
 #[tokio::main]
 async fn main() {
     let base_url = env::var("NOMAD_BASE_URL").expect("Nomad base url must be defined");
@@ -85,14 +114,8 @@ async fn main() {
         println!("Hello, from Rust code!");
     }"#;
 
-    match client.job_create(&create_execute_rust_job(code)).await {
-        Ok(response) => {
-            if let Some(eval_id) = response.eval_id {
-                println!("Evaluation ID: {}", eval_id);
-            } else {
-                eprintln!("No evaluation ID");
-            }
-        }
-        Err(error) => eprintln!("Error creating job: {}", error),
+    match submit_execute_rust_job(&client, code).await {
+        Ok(alloc_id) => println!("Allocation ID: {}", alloc_id),
+        Err(error) => eprintln!("Error: {}", error),
     };
 }
