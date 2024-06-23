@@ -1,0 +1,3 @@
+[submodule "nomad-rs"]
+	path = nomad-rs
+	url = git@github.com:unknown/nomad-rs.git
