@@ -1,8 +1,5 @@
-/target
+**/target
 .env
-
-# templates
-/templates/rust/target
 
 # MAC
 .DS_Store

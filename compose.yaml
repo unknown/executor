@@ -1,5 +1,4 @@
 services:
   executor-rust:
     build:
-      context: .
-      target: executor-rust
+      context: executor-rust
