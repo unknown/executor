@@ -1,4 +1,7 @@
 services:
+  backend:
+    build:
+      context: backend
   executor-rust:
     build:
       context: executor-rust

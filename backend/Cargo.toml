@@ -8,7 +8,8 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1.80"
 axum = "0.7.5"
-nomad-rs = { path = "../nomad-rs" }
+# nomad-rs = { path = "../nomad-rs" }
+nomad-rs = "0.0.1-beta"
 serde = { version = "1.0.203", features = ["derive"] }
 serde_json = "1.0.117"
 thiserror = "1.0.61"

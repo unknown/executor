@@ -52,7 +52,7 @@ impl crate::jobs::Job for RustJob {
 
                         config: Some(
                             serde_json::from_value(json!({
-                                "image": "dmo1010/executor:rust-latest",
+                                "image": "dmo1010/executor-rust:0.1.0",
                                 "mount": [
                                     {
                                         "source": "local/main.rs",
