@@ -1,4 +1,4 @@
-use std::process::{Command, Output};
+use std::process::{exit, Command, Output};
 
 fn compile_program() -> std::io::Result<Output> {
     Command::new("cargo")
@@ -15,22 +15,21 @@ fn execute_binary(binary_path: &std::path::Path) -> std::io::Result<Output> {
 fn main() {
     match compile_program() {
         Ok(output) => {
-            let stdout = String::from_utf8(output.stdout.clone()).unwrap();
-            let stderr = String::from_utf8(output.stderr.clone()).unwrap();
-            println!("{}", output.status);
-            println!("stdout:\n{}", stdout);
-            eprintln!("stderr:\n{}", stderr);
+            if !output.status.success() {
+                let stderr = String::from_utf8(output.stderr.clone()).unwrap();
+                eprintln!("stderr:\n{}", stderr);
+                exit(1);
+            }
         }
         Err(e) => eprintln!("Failed to compile: {}", e),
     }
 
     let binary_path = std::path::Path::new("./templates/rust/target/release/rust");
-
     match execute_binary(binary_path) {
         Ok(output) => {
             let stdout = String::from_utf8(output.stdout.clone()).unwrap();
             let stderr = String::from_utf8(output.stderr.clone()).unwrap();
-            println!("{}", output.status);
+            println!("status:\n{}", output.status);
             println!("stdout:\n{}", stdout);
             eprintln!("stderr:\n{}", stderr);
         }

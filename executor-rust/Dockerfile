@@ -20,6 +20,9 @@ RUN touch src/lib.rs && cargo build --release
 # final base
 FROM rust:1.66-slim
 
+# copy templates
+COPY ./templates ./templates
+
 # copy build artifact
 COPY --from=build /app/target/release/executor-rust .
 
