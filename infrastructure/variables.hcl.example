@@ -1,0 +1,18 @@
+# Packer variables (all are required)
+region                    = "HETZNER_LOCATION"
+
+# Terraform variables (all are required)
+network_zone              = "HETZNER_NETWORK_ZONE"
+snapshot_image            = "SNAPSHOT_ID_FROM_PACKER_BUILD"
+
+# These variables will default to the values shown
+# and do not need to be updated unless you want to
+# change them
+# retry_join              = ["10.0.2.11", "10.0.2.12", "10.0.2.13"]
+# allowlist_ip            = "0.0.0.0/0"
+# name                    = "nomad"
+# network_interface       = "enp7s0"
+# server_instance_type    = "cpx11"
+# server_count            = "3"
+# client_instance_type    = "cpx11"
+# client_count            = "3"
