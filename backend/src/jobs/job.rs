@@ -21,40 +21,25 @@ pub trait Job {
         timeout: Duration,
         interval: Duration,
     ) -> Result<String, ExecutionError> {
-        let alloc_id = submit_job(nomad, &self.job_id(), &self.create_job_request()).await?;
+        submit_job(nomad, &self.create_job_request()).await?;
         println!("Job has been submitted.");
 
         poll_job_until_dead(&nomad, &self.job_id(), timeout, interval).await?;
         println!("Job has finished.");
 
-        get_job_output(&nomad, &alloc_id, &self.job_name()).await
+        get_job_output(&nomad, &self.job_id(), &self.job_name()).await
     }
 }
 
-// TODO: better way to get allocation id?
 pub async fn submit_job(
     nomad: &Nomad,
-    job_id: &str,
     job_create_request: &JobCreateRequest,
-) -> Result<String, ExecutionError> {
+) -> Result<(), ExecutionError> {
     nomad
         .job_create(&job_create_request)
         .await
-        .map_err(|error| ExecutionError::NomadError(error))?;
-
-    let allocations = nomad
-        .job_list_allocations(job_id, &JobListAllocationsParams::default())
-        .await
-        .map_err(|error| ExecutionError::NomadError(error))?;
-
-    let allocation = allocations
-        .first()
-        .ok_or_else(|| ExecutionError::InvalidResponse("No allocations".to_string()))?;
-
-    allocation
-        .to_owned()
-        .id
-        .ok_or_else(|| ExecutionError::InvalidResponse("Missing allocation ID".to_string()))
+        .map(|_| ())
+        .map_err(|error| ExecutionError::NomadError(error))
 }
 
 // TODO: use blocking queries instead of a polling interval
@@ -83,13 +68,28 @@ pub async fn poll_job_until_dead(
     .map_err(|_| ExecutionError::TimeoutError("Job's status is not dead".to_string()))?
 }
 
+// TODO: assumes submitting job only creates one allocation
 pub async fn get_job_output(
     nomad: &Nomad,
-    alloc_id: &str,
+    job_id: &str,
     job_name: &str,
 ) -> Result<String, ExecutionError> {
+    let allocations = nomad
+        .job_list_allocations(job_id, &JobListAllocationsParams::default())
+        .await
+        .map_err(|error| ExecutionError::NomadError(error))?;
+
+    let allocation = allocations
+        .first()
+        .ok_or_else(|| ExecutionError::InvalidResponse("No allocations".to_string()))?;
+
+    let alloc_id = allocation
+        .to_owned()
+        .id
+        .ok_or_else(|| ExecutionError::InvalidResponse("Missing allocation ID".to_string()))?;
+
     nomad
-        .client_read_file(alloc_id, &format!("alloc/logs/{}.stdout.0", job_name))
+        .client_read_file(&alloc_id, &format!("alloc/logs/{}.stdout.0", job_name))
         .await
         .map_err(|error| ExecutionError::NomadError(error))
 }

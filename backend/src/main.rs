@@ -3,18 +3,23 @@ mod jobs;
 
 use std::time::Duration;
 
-use axum::{extract, http::StatusCode, routing::post, Json, Router};
+use axum::{
+    extract,
+    http::StatusCode,
+    routing::{get, post},
+    Json, Router,
+};
 use jobs::{Job, RustJob};
 use nomad_rs::Nomad;
 use serde::{Deserialize, Serialize};
 
 #[tokio::main]
 async fn main() {
-    let app = Router::new().route("/execute-rust", post(execute_rust));
+    let app = Router::new()
+        .route("/", get(|| async { "Heartbeat" }))
+        .route("/execute-rust", post(execute_rust));
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000")
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
 
@@ -43,11 +48,14 @@ async fn execute_rust(
             StatusCode::OK,
             Json(ExecuteRustResponse::Success { output }),
         ),
-        Err(error) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ExecuteRustResponse::Error {
-                error: error.to_string(),
-            }),
-        ),
+        Err(error) => {
+            eprintln!("{}", error);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ExecuteRustResponse::Error {
+                    error: error.to_string(),
+                }),
+            )
+        }
     }
 }
