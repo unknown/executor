@@ -1,0 +1,2 @@
+# Required
+nomad_jwks_url = "http://nomad.example.com:4646/.well-known/jwks.json

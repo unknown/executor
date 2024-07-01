@@ -26,14 +26,22 @@ job "executor-backend" {
     task "backend" {
       driver = "docker"
 
-      env {
-        NOMAD_ADDR  = "http://10.0.2.11:4646"
-        NOMAD_TOKEN = "test lol"
-      }
-
       config {
         image = "dmo1010/executor-backend:0.1.0"
         ports = ["http"]
+      }
+
+      vault {}
+
+      template {
+        data        = <<EOF
+NOMAD_ADDR  = "http://10.0.2.11:4646"
+{{with secret "secret/data/default/executor-backend/config"}}
+NOMAD_TOKEN={{.Data.data.nomad_token}}
+{{end}}
+EOF
+        destination = "${NOMAD_SECRETS_DIR}/env"
+        env         = true
       }
     }
   }

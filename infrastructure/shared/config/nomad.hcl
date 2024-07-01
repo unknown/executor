@@ -24,9 +24,10 @@ acl {
 }
 
 vault {
-  enabled          = false
-  address          = "http://active.vault.service.consul:8200"
-  task_token_ttl   = "1h"
-  create_from_role = "nomad-cluster"
-  token            = ""
+  enabled = true
+
+  default_identity {
+    aud  = ["vault.io"]
+    ttl  = "1h"
+  }
 }

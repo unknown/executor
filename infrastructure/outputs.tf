@@ -15,5 +15,8 @@ Server public IPs: ${join(", ", hcloud_server.server[*].ipv4_address)}
 
 The Consul UI can be accessed at http://${hcloud_server.server[0].ipv4_address}:8500/ui
 with the token: ${random_uuid.nomad_token.result}
+
+The Vault UI can be accessed at http://${hcloud_server.server[0].ipv4_address}:8200/ui
+
 CONFIGURATION
 }

@@ -7,6 +7,7 @@ sudo bash /ops/shared/scripts/server.sh "${server_count}" '${retry_join}' "${net
 
 ACL_DIRECTORY="/ops/shared/config"
 CONSUL_BOOTSTRAP_TOKEN="/tmp/consul_bootstrap"
+CONSUL_VAULT_TOKEN="/tmp/consul_vault_token"
 NOMAD_BOOTSTRAP_TOKEN="/tmp/nomad_bootstrap"
 NOMAD_USER_TOKEN="/tmp/nomad_user_token"
 
@@ -51,6 +52,14 @@ consul acl role create -name "nomad-auto-join" -description "Role with policies 
 
 consul acl token create -accessor=${nomad_consul_token_id} -secret=${nomad_consul_token_secret} -description "Nomad server/client auto-join token" -role-name nomad-auto-join -token-file=$CONSUL_BOOTSTRAP_TOKEN
 
+
+consul acl policy create -name 'vault' -rules="@$ACL_DIRECTORY/consul-acl-vault.hcl" -token-file=$CONSUL_BOOTSTRAP_TOKEN
+
+consul acl role create -name "vault" -description "Role with policies necessary for Vault to interact with Consul." -policy-name "vault" -token-file=$CONSUL_BOOTSTRAP_TOKEN
+
+consul acl token create -description "Vault token" -role-name vault -token-file=$CONSUL_BOOTSTRAP_TOKEN | grep -i secret | awk -F ":" '{print $2}' | xargs > $CONSUL_VAULT_TOKEN
+
+
 # Wait for nomad servers to come up and bootstrap nomad ACL
 for i in {1..12}; do
     # capture stdout and stderr
@@ -84,3 +93,9 @@ nomad acl token create -token "$(cat $NOMAD_BOOTSTRAP_TOKEN)" -name "read-token"
 consul kv put -token-file=$CONSUL_BOOTSTRAP_TOKEN nomad_user_token "$(cat $NOMAD_USER_TOKEN)"
 
 echo "ACL bootstrap end"
+
+sed -i "s/CONSUL_VAULT_TOKEN/$(cat $CONSUL_VAULT_TOKEN)/g" /etc/vault.d/vault.hcl
+
+sudo systemctl restart vault
+
+echo "Finished Vault setup"
