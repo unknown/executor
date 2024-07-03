@@ -1,6 +1,10 @@
-use std::process::{exit, Command, Output};
+use std::{
+    io,
+    path::Path,
+    process::{self, Command, Output},
+};
 
-fn compile_program() -> std::io::Result<Output> {
+fn compile_program() -> io::Result<Output> {
     Command::new("cargo")
         .arg("build")
         .arg("--release")
@@ -8,31 +12,31 @@ fn compile_program() -> std::io::Result<Output> {
         .output()
 }
 
-fn execute_binary(binary_path: &std::path::Path) -> std::io::Result<Output> {
+fn execute_binary(binary_path: &Path) -> io::Result<Output> {
     Command::new(binary_path).output()
 }
 
-fn main() {
-    match compile_program() {
-        Ok(output) => {
-            if !output.status.success() {
-                let stderr = String::from_utf8(output.stderr.clone()).unwrap();
-                eprintln!("stderr:\n{}", stderr);
-                exit(1);
-            }
-        }
-        Err(e) => eprintln!("Failed to compile: {}", e),
+fn run() -> io::Result<()> {
+    let compile_output = compile_program()?;
+    if !compile_output.status.success() {
+        let stderr = String::from_utf8_lossy(&compile_output.stderr);
+        eprint!("{}", stderr);
+        process::exit(1);
     }
 
-    let binary_path = std::path::Path::new("./templates/rust/target/release/rust");
-    match execute_binary(binary_path) {
-        Ok(output) => {
-            let stdout = String::from_utf8(output.stdout.clone()).unwrap();
-            let stderr = String::from_utf8(output.stderr.clone()).unwrap();
-            println!("status:\n{}", output.status);
-            println!("stdout:\n{}", stdout);
-            eprintln!("stderr:\n{}", stderr);
-        }
-        Err(e) => eprintln!("Failed to execute binary: {}", e),
+    let binary_path = Path::new("./templates/rust/target/release/rust");
+    let exec_output = execute_binary(binary_path)?;
+    let stdout = String::from_utf8_lossy(&exec_output.stdout);
+    let stderr = String::from_utf8_lossy(&exec_output.stderr);
+    print!("{}", stdout);
+    eprint!("{}", stderr);
+
+    Ok(())
+}
+
+fn main() {
+    if let Err(e) = run() {
+        eprintln!("{}", e);
+        process::exit(1);
     }
 }

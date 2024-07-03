@@ -5,9 +5,16 @@ use nomad_rs::{
     api::job::models::{JobCreateRequest, JobListAllocationsParams},
     Nomad,
 };
+use serde::Serialize;
 use tokio::time::{sleep, timeout};
 
 use crate::error::ExecutionError;
+
+#[derive(Debug, Serialize)]
+pub struct JobOutput {
+    stdout: String,
+    stderr: String,
+}
 
 #[async_trait]
 pub trait Job {
@@ -20,7 +27,7 @@ pub trait Job {
         nomad: &Nomad,
         timeout: Duration,
         interval: Duration,
-    ) -> Result<String, ExecutionError> {
+    ) -> Result<JobOutput, ExecutionError> {
         submit_job(nomad, &self.create_job_request()).await?;
         println!("Job has been submitted.");
 
@@ -73,23 +80,27 @@ pub async fn get_job_output(
     nomad: &Nomad,
     job_id: &str,
     job_name: &str,
-) -> Result<String, ExecutionError> {
+) -> Result<JobOutput, ExecutionError> {
     let allocations = nomad
         .job_list_allocations(job_id, &JobListAllocationsParams::default())
         .await
         .map_err(|error| ExecutionError::NomadError(error))?;
-
     let allocation = allocations
         .first()
         .ok_or_else(|| ExecutionError::InvalidResponse("No allocations".to_string()))?;
-
     let alloc_id = allocation
         .to_owned()
         .id
         .ok_or_else(|| ExecutionError::InvalidResponse("Missing allocation ID".to_string()))?;
 
-    nomad
+    let stdout = nomad
         .client_read_file(&alloc_id, &format!("alloc/logs/{}.stdout.0", job_name))
         .await
-        .map_err(|error| ExecutionError::NomadError(error))
+        .map_err(|error| ExecutionError::NomadError(error))?;
+    let stderr = nomad
+        .client_read_file(&alloc_id, &format!("alloc/logs/{}.stderr.0", job_name))
+        .await
+        .map_err(|error| ExecutionError::NomadError(error))?;
+
+    Ok(JobOutput { stdout, stderr })
 }

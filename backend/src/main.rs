@@ -9,7 +9,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use jobs::{Job, RustJob};
+use jobs::{Job, JobOutput, RustJob};
 use nomad_rs::Nomad;
 use serde::{Deserialize, Serialize};
 
@@ -31,7 +31,7 @@ struct ExecuteRustRequest {
 #[derive(Debug, Serialize)]
 #[serde(tag = "status")]
 enum ExecuteRustResponse {
-    Success { output: String },
+    Success { output: JobOutput },
     Error { error: String },
 }
 
