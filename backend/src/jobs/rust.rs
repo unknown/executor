@@ -1,3 +1,5 @@
+use std::env;
+
 use async_trait::async_trait;
 use nomad_rs::{
     api::job::models::JobCreateRequest,
@@ -58,7 +60,7 @@ impl crate::jobs::Job for RustJob {
 
                         config: Some(
                             serde_json::from_value(json!({
-                                "image": "dmo1010/executor-rust:0.1.0",
+                                "image": env::var("RUST_IMAGE").expect("RUST_IMAGE must be set"),
                                 "mount": [
                                     {
                                         "source": "local/main.rs",
