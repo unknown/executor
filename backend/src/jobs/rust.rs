@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use nomad_rs::{
     api::job::models::JobCreateRequest,
-    models::{Job, RestartPolicy, Task, TaskGroup, Template},
+    models::{Job, ReschedulePolicy, RestartPolicy, Task, TaskGroup, Template},
 };
 use serde_json::json;
 use uuid::Uuid;
@@ -39,6 +39,12 @@ impl crate::jobs::Job for RustJob {
 
                 task_groups: Some(vec![TaskGroup {
                     name: Some(self.job_name()),
+
+                    reschedule_policy: Some(ReschedulePolicy {
+                        attempts: Some(0),
+                        unlimited: Some(false),
+                        ..Default::default()
+                    }),
 
                     restart_policy: Some(RestartPolicy {
                         attempts: Some(0),
