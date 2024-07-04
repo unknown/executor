@@ -1,9 +1,9 @@
 job "executor-backend" {
   datacenters = ["dc1"]
-  type = "service"
+  type        = "service"
 
   group "executor-backend" {
-    count = 3
+    count = 1
 
     network {
       port "http" {
@@ -14,6 +14,11 @@ job "executor-backend" {
     service {
       name = "backend"
       port = "http"
+
+      tags = [
+        "traefik.enable=true",
+        "traefik.http.routers.backend.rule=PathPrefix(`/`)",
+      ]
 
       check {
         type     = "http"
@@ -34,13 +39,14 @@ job "executor-backend" {
       vault {}
 
       template {
-        data        = <<EOF
+        data = <<EOF
 NOMAD_ADDR="http://10.0.2.11:4646"
 {{with secret "secret/data/default/executor-backend/config"}}
 NOMAD_TOKEN="{{.Data.data.nomad_token}}"
 {{end}}
 RUST_IMAGE="dmo1010/executor-rust:0.1.1"
 EOF
+
         destination = "${NOMAD_SECRETS_DIR}/env"
         env         = true
       }

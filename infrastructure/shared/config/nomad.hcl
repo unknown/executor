@@ -24,7 +24,7 @@ acl {
 }
 
 vault {
-  enabled = true
+  enabled          = true
 
   default_identity {
     aud  = ["vault.io"]
