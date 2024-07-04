@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use nomad_rs::{
-    api::job::models::{JobCreateRequest, JobListAllocationsParams},
+    api::job::models::{JobCreateRequest, JobListAllocationsParams, JobStopParams},
     Nomad,
 };
 use serde::Serialize;
@@ -57,7 +57,7 @@ pub async fn poll_job_until_dead(
     timeout_duration: Duration,
     interval: Duration,
 ) -> Result<(), ExecutionError> {
-    timeout(timeout_duration, async {
+    let result = timeout(timeout_duration, async {
         loop {
             let job = nomad
                 .job_read(job_id)
@@ -71,8 +71,18 @@ pub async fn poll_job_until_dead(
             sleep(interval).await;
         }
     })
-    .await
-    .map_err(|_| ExecutionError::TimeoutError("Job's status is not dead".to_string()))?
+    .await;
+
+    if let Err(_) = result {
+        nomad
+            .job_stop(job_id, &JobStopParams::default())
+            .await
+            .map_err(|_| ExecutionError::TimeoutError("Failed to stop job".to_string()))?;
+
+        return Err(ExecutionError::TimeoutError("Job timed out".to_string()));
+    }
+
+    result.map_err(|_| ExecutionError::TimeoutError("Job timed out".to_string()))?
 }
 
 // TODO: assumes submitting job only creates one allocation
