@@ -98,6 +98,11 @@ pub async fn get_job_output(
     let allocation = allocations
         .first()
         .ok_or_else(|| ExecutionError::InvalidResponse("No allocations".to_string()))?;
+
+    if allocation.client_status.as_deref() != Some("complete") {
+        return Err(ExecutionError::TimeoutError("Job failed".to_string()));
+    }
+
     let alloc_id = allocation
         .to_owned()
         .id
