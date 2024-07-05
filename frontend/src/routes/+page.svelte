@@ -48,8 +48,8 @@
         : '';
 </script>
 
-<div class="flex min-h-screen flex-col">
-  <header class="p-2">
+<div class="flex h-screen flex-col">
+  <header class="flex-shrink-0 border-b p-2">
     <div class="flex items-center justify-between">
       <h1 class="text-xl font-medium">Executor</h1>
       <form>
@@ -63,16 +63,24 @@
       </form>
     </div>
   </header>
-  <main class="flex flex-col">
-    <CodeMirror bind:value={code} lang={rust()} tabSize={4} />
-    <div class="prose whitespace-pre">
-      <div>
-        <h2>stdout</h2>
-        <code>{stdout}</code>
+  <main class="flex min-h-0 flex-1 flex-col">
+    <CodeMirror
+      bind:value={code}
+      lang={rust()}
+      tabSize={4}
+      class="min-h-0 flex-1"
+      styles={{
+        '&': { height: '100%' }
+      }}
+    />
+    <div class="flex h-64 gap-2 whitespace-pre border-t p-2">
+      <div class="flex min-w-0 flex-1 flex-col">
+        <h2 class="mb-1">Standard output</h2>
+        <code class="prose flex-1 overflow-auto rounded-md bg-zinc-50 p-2 text-sm">{stdout}</code>
       </div>
-      <div>
-        <h2>stderr</h2>
-        <code>{stderr}</code>
+      <div class="flex min-w-0 flex-1 flex-col">
+        <h2 class="mb-1">Standard error</h2>
+        <code class="prose flex-1 overflow-auto rounded-md bg-zinc-50 p-2 text-sm">{stderr}</code>
       </div>
     </div>
   </main>
