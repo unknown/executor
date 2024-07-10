@@ -19,7 +19,7 @@
 
   type ExecutionResponse = z.infer<typeof executionResponseSchema>;
 
-  let code = 'fn main() {\n    println!("Hello, world!");\n}';
+  let code = '// Rust 1.66\nfn main() {\n    println!("Hello, world!");\n}';
 
   let output: ExecutionResponse | null = null;
   let loading = false;
