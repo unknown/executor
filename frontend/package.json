@@ -37,6 +37,7 @@
   "type": "module",
   "dependencies": {
     "@codemirror/lang-rust": "^6.0.1",
+    "@fontsource-variable/inter": "^5.0.19",
     "svelte-codemirror-editor": "^1.4.0",
     "zod": "^3.23.8"
   }

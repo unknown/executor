@@ -11,6 +11,9 @@ importers:
       '@codemirror/lang-rust':
         specifier: ^6.0.1
         version: 6.0.1
+      '@fontsource-variable/inter':
+        specifier: ^5.0.19
+        version: 5.0.19
       svelte-codemirror-editor:
         specifier: ^1.4.0
         version: 1.4.0(codemirror@6.0.1(@lezer/common@1.2.1))(svelte@4.2.18)
@@ -284,6 +287,9 @@ packages:
   '@eslint/object-schema@2.1.4':
     resolution: {integrity: sha512-BsWiH1yFGjXXS2yvrf5LyuoSIIbPrGUWob917o+BTKuZ7qJdxX8aJLRxs1fS9n6r7vESrq1OUqb68dANcFXuQQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@fontsource-variable/inter@5.0.19':
+    resolution: {integrity: sha512-V5KPpF5o0sI1uNWAdFArC87NDOb/ZJDPXLomEiKmDCYMlDUCTn2flkuAZkyME2rtGOKO7vzCuDJAND0m/5PhDA==}
 
   '@humanwhocodes/module-importer@1.0.1':
     resolution: {integrity: sha512-bxveV4V8v5Yb4ncFTT3rPSgZBOpCkjfK0y4oVVVJwIuDVBRMDXrPyXRL988i5ap9m9bnyEEjWfm5WkBmtffLfA==}
@@ -1805,6 +1811,8 @@ snapshots:
   '@eslint/js@9.5.0': {}
 
   '@eslint/object-schema@2.1.4': {}
+
+  '@fontsource-variable/inter@5.0.19': {}
 
   '@humanwhocodes/module-importer@1.0.1': {}
 

@@ -54,11 +54,11 @@
       <h1 class="text-xl font-medium">Executor</h1>
       <form>
         <button
-          class="rounded-md bg-zinc-100 px-3 py-2 text-sm"
+          class="rounded-md bg-green-500 px-3.5 py-2 text-sm font-medium text-white hover:bg-green-600 disabled:bg-green-300"
           on:click={submitCode}
           disabled={loading}
         >
-          Submit
+          Run
         </button>
       </form>
     </div>
@@ -75,12 +75,16 @@
     />
     <div class="flex h-64 gap-2 whitespace-pre border-t p-2">
       <div class="flex min-w-0 flex-1 flex-col">
-        <h2 class="mb-1">Standard output</h2>
-        <code class="prose flex-1 overflow-auto rounded-md bg-zinc-50 p-2 text-sm">{stdout}</code>
+        <h2 class="mb-1 font-medium">Standard output</h2>
+        <code class="prose flex-1 overflow-auto rounded-md border bg-zinc-50 p-2 text-sm">
+          {stdout}
+        </code>
       </div>
       <div class="flex min-w-0 flex-1 flex-col">
-        <h2 class="mb-1">Standard error</h2>
-        <code class="prose flex-1 overflow-auto rounded-md bg-zinc-50 p-2 text-sm">{stderr}</code>
+        <h2 class="mb-1 font-medium">Standard error</h2>
+        <code class="prose flex-1 overflow-auto rounded-md border bg-zinc-50 p-2 text-sm">
+          {stderr}
+        </code>
       </div>
     </div>
   </main>
