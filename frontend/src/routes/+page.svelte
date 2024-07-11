@@ -30,13 +30,24 @@
       const response = await fetch('/api/submit', {
         method: 'POST',
         body: JSON.stringify({ code })
-      }).then((response) => response.json());
-      loading = false;
+      }).then((response) => {
+        if (!response.ok) {
+          throw new Error('API response not ok');
+        }
+        return response.json();
+      });
       output = executionResponseSchema.parse(response);
     } catch (error) {
-      loading = false;
+      output =
+        error instanceof Error
+          ? {
+              status: 'Error',
+              error: error.message
+            }
+          : null;
       console.error(error);
     }
+    loading = false;
   }
 
   $: stdout = output?.status === 'Success' ? output.output.stdout : '';
