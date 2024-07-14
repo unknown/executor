@@ -6,7 +6,7 @@ use nomad_rs::{
     Nomad,
 };
 use serde::Serialize;
-use tokio::time::{sleep, timeout};
+use tokio::time::{interval, timeout};
 
 use crate::error::ExecutionError;
 
@@ -55,10 +55,14 @@ pub async fn poll_job_until_dead(
     nomad: &Nomad,
     job_id: &str,
     timeout_duration: Duration,
-    interval: Duration,
+    interval_duration: Duration,
 ) -> Result<(), ExecutionError> {
+    let mut interval = interval(interval_duration);
+
     let result = timeout(timeout_duration, async {
         loop {
+            interval.tick().await;
+
             let job = nomad
                 .job_read(job_id)
                 .await
@@ -67,13 +71,13 @@ pub async fn poll_job_until_dead(
             if job.status.as_deref() == Some("dead") {
                 return Ok(());
             }
-
-            sleep(interval).await;
         }
     })
     .await;
 
     if let Err(_) = result {
+        println!("Killing job");
+
         nomad
             .job_stop(job_id, &JobStopParams::default())
             .await
