@@ -3,10 +3,23 @@
   import CodeMirror from 'svelte-codemirror-editor';
   import { z } from 'zod';
 
-  const executionResponseSchema = z.discriminatedUnion('status', [
+  const submitSchema = z.discriminatedUnion('status', [
+    z.object({
+      status: z.literal('Success'),
+      job_id: z.string(),
+      job_name: z.string()
+    }),
+    z.object({
+      status: z.literal('Error'),
+      error: z.string()
+    })
+  ]);
+
+  const executionOutputSchema = z.discriminatedUnion('status', [
     z.object({
       status: z.literal('Success'),
       output: z.object({
+        pending: z.boolean(),
         stdout: z.string(),
         stderr: z.string()
       })
@@ -17,27 +30,45 @@
     })
   ]);
 
-  type ExecutionResponse = z.infer<typeof executionResponseSchema>;
+  type ExecutionOutputResponse = z.infer<typeof executionOutputSchema>;
 
   let code = '// Rust 1.66\nfn main() {\n    println!("Hello, world!");\n}';
 
-  let output: ExecutionResponse | null = null;
-  let loading = false;
+  let pending = false;
+  let output: ExecutionOutputResponse | null = null;
+  let job_id: string | null = null;
+  let job_name: string | null = null;
+  let interval: number | null = null;
 
   async function submitCode() {
-    loading = true;
+    pending = true;
+    output = null;
+    job_id = null;
+    job_name = null;
     try {
       const response = await fetch('/api/submit', {
         method: 'POST',
         body: JSON.stringify({ code })
-      }).then((response) => {
-        if (!response.ok) {
-          throw new Error('API response not ok');
-        }
-        return response.json();
-      });
-      output = executionResponseSchema.parse(response);
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('API response not ok');
+          }
+          return response.json();
+        })
+        .then((response) => submitSchema.parse(response));
+
+      if (response.status === 'Error') {
+        pending = false;
+        return;
+      }
+
+      job_id = response.job_id;
+      job_name = response.job_name;
+      interval = setInterval(pollOutput, 1000);
     } catch (error) {
+      console.error(error);
+      pending = false;
       output =
         error instanceof Error
           ? {
@@ -45,9 +76,48 @@
               error: error.message
             }
           : null;
-      console.error(error);
     }
-    loading = false;
+  }
+
+  async function pollOutput() {
+    if (interval === null) {
+      return;
+    }
+
+    if (job_id === null || job_name === null) {
+      clearInterval(interval);
+      return;
+    }
+
+    try {
+      output = await fetch(`/api/status/${job_name}/${job_id}`, {
+        method: 'GET'
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error('API response not ok');
+          }
+          return response.json();
+        })
+        .then((response) => executionOutputSchema.parse(response));
+    } catch (error) {
+      console.error(error);
+      output =
+        error instanceof Error
+          ? {
+              status: 'Error',
+              error: error.message
+            }
+          : null;
+    }
+
+    if (
+      output?.status === 'Error' ||
+      (output?.status === 'Success' && output.output.pending === false)
+    ) {
+      pending = false;
+      clearInterval(interval);
+    }
   }
 
   $: stdout = output?.status === 'Success' ? output.output.stdout : '';
@@ -67,7 +137,7 @@
         <button
           class="rounded-md bg-green-500 px-3.5 py-2 text-sm font-medium text-white hover:bg-green-600 disabled:bg-green-300"
           on:click={submitCode}
-          disabled={loading}
+          disabled={pending}
         >
           Run
         </button>
