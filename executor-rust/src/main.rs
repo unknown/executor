@@ -21,7 +21,7 @@ fn run() -> io::Result<()> {
     if !compile_output.status.success() {
         let stderr = String::from_utf8_lossy(&compile_output.stderr);
         eprint!("{}", stderr);
-        process::exit(1);
+        process::exit(0);
     }
 
     let binary_path = Path::new("./templates/rust/target/release/rust");
@@ -37,6 +37,6 @@ fn run() -> io::Result<()> {
 fn main() {
     if let Err(e) = run() {
         eprintln!("{}", e);
-        process::exit(1);
+        process::exit(0);
     }
 }

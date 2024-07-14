@@ -103,15 +103,17 @@ pub async fn get_job_output(
             ExecutionError::InvalidResponse(format!("Missing task state for {}", job_id))
         })?;
 
-    let termination_event = task_state
-        .events
-        .as_ref()
-        .ok_or_else(|| ExecutionError::InvalidResponse("Missing events".to_string()))?
-        .iter()
-        .find(|event| event._type.as_deref() == Some("Terminated"))
-        .ok_or_else(|| ExecutionError::InvalidResponse("Missing termination event".to_string()))?;
+    if task_state.failed == Some(true) {
+        let termination_event = task_state
+            .events
+            .as_ref()
+            .ok_or_else(|| ExecutionError::InvalidResponse("Missing events".to_string()))?
+            .iter()
+            .find(|event| event._type.as_deref() == Some("Terminated"))
+            .ok_or_else(|| {
+                ExecutionError::InvalidResponse("Missing termination event".to_string())
+            })?;
 
-    if !matches!(termination_event.exit_code, Some(0) | Some(1)) {
         return Err(ExecutionError::TimeoutError(
             termination_event
                 .message

@@ -32,7 +32,7 @@ job "executor-backend" {
       driver = "docker"
 
       config {
-        image = "dmo1010/executor-backend:0.1.4"
+        image = "dmo1010/executor-backend:0.1.5"
         ports = ["http"]
       }
 
@@ -44,7 +44,7 @@ NOMAD_ADDR="http://10.0.2.11:4646"
 {{with secret "secret/data/default/executor-backend/config"}}
 NOMAD_TOKEN="{{.Data.data.nomad_token}}"
 {{end}}
-RUST_IMAGE="dmo1010/executor-rust:0.1.1"
+RUST_IMAGE="dmo1010/executor-rust:0.1.2"
 EOF
 
         destination = "${NOMAD_SECRETS_DIR}/env"
