@@ -8,6 +8,7 @@ use nomad_rs::{
 use serde_json::json;
 use uuid::Uuid;
 
+#[derive(Clone, Debug)]
 pub struct RustJob {
     uuid: String,
     code: String,

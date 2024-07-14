@@ -6,7 +6,7 @@ use nomad_rs::{
     Nomad,
 };
 use serde::Serialize;
-use tokio::time::{interval, timeout};
+use tokio::time::interval;
 
 use crate::error::ExecutionError;
 
@@ -25,16 +25,23 @@ pub trait Job {
     async fn execute(
         &self,
         nomad: &Nomad,
-        timeout: Duration,
-        interval: Duration,
+        interval_duration: Duration,
     ) -> Result<JobOutput, ExecutionError> {
         submit_job(nomad, &self.create_job_request()).await?;
         println!("Job has been submitted.");
 
-        poll_job_until_dead(&nomad, &self.job_id(), timeout, interval).await?;
+        poll_job_until_dead(&nomad, &self.job_id(), interval_duration).await?;
         println!("Job has finished.");
 
         get_job_output(&nomad, &self.job_id(), &self.job_name()).await
+    }
+
+    async fn stop(&self, nomad: &Nomad) -> Result<(), ExecutionError> {
+        nomad
+            .job_stop(&self.job_id(), &JobStopParams::default())
+            .await
+            .map_err(|error| ExecutionError::NomadError(error))?;
+        Ok(())
     }
 }
 
@@ -54,39 +61,22 @@ pub async fn submit_job(
 pub async fn poll_job_until_dead(
     nomad: &Nomad,
     job_id: &str,
-    timeout_duration: Duration,
     interval_duration: Duration,
 ) -> Result<(), ExecutionError> {
     let mut interval = interval(interval_duration);
 
-    let result = timeout(timeout_duration, async {
-        loop {
-            interval.tick().await;
+    loop {
+        interval.tick().await;
 
-            let job = nomad
-                .job_read(job_id)
-                .await
-                .map_err(|error| ExecutionError::NomadError(error))?;
-
-            if job.status.as_deref() == Some("dead") {
-                return Ok(());
-            }
-        }
-    })
-    .await;
-
-    if let Err(_) = result {
-        println!("Killing job");
-
-        nomad
-            .job_stop(job_id, &JobStopParams::default())
+        let job = nomad
+            .job_read(job_id)
             .await
-            .map_err(|_| ExecutionError::TimeoutError("Failed to stop job".to_string()))?;
+            .map_err(|error| ExecutionError::NomadError(error))?;
 
-        return Err(ExecutionError::TimeoutError("Job timed out".to_string()));
+        if job.status.as_deref() == Some("dead") {
+            return Ok(());
+        }
     }
-
-    result.map_err(|_| ExecutionError::TimeoutError("Job timed out".to_string()))?
 }
 
 // TODO: assumes submitting job only creates one allocation

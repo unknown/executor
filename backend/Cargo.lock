@@ -599,9 +599,9 @@ dependencies = [
 
 [[package]]
 name = "nomad-rs"
-version = "0.0.1-beta.2"
+version = "0.0.1-beta.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a9bcb3a8cc683962fa260559318ff87cec2a883e351297c6bae102695e67c5d5"
+checksum = "2f604474a0c52d219606282489e78d3ba0ab9a83603ea74d465bf9abaa39fb01"
 dependencies = [
  "reqwest",
  "serde",
