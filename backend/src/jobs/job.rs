@@ -12,6 +12,7 @@ use crate::error::ExecutionError;
 
 #[derive(Debug, Serialize)]
 pub struct JobOutput {
+    pending: bool,
     stdout: String,
     stderr: String,
 }
@@ -22,18 +23,12 @@ pub trait Job {
     fn job_name(&self) -> String;
     fn create_job_request(&self) -> JobCreateRequest;
 
-    async fn execute(
-        &self,
-        nomad: &Nomad,
-        interval_duration: Duration,
-    ) -> Result<JobOutput, ExecutionError> {
-        submit_job(nomad, &self.create_job_request()).await?;
-        println!("Job has been submitted.");
-
-        poll_job_until_dead(&nomad, &self.job_id(), interval_duration).await?;
-        println!("Job has finished.");
-
-        get_job_output(&nomad, &self.job_id(), &self.job_name()).await
+    async fn submit(&self, nomad: &Nomad) -> Result<(), ExecutionError> {
+        nomad
+            .job_create(&self.create_job_request())
+            .await
+            .map_err(|error| ExecutionError::NomadError(error))?;
+        Ok(())
     }
 
     async fn stop(&self, nomad: &Nomad) -> Result<(), ExecutionError> {
@@ -43,38 +38,27 @@ pub trait Job {
             .map_err(|error| ExecutionError::NomadError(error))?;
         Ok(())
     }
-}
 
-pub async fn submit_job(
-    nomad: &Nomad,
-    job_create_request: &JobCreateRequest,
-) -> Result<(), ExecutionError> {
-    nomad
-        .job_create(&job_create_request)
-        .await
-        .map(|_| ())
-        .map_err(|error| ExecutionError::NomadError(error))
-}
+    // TODO: use blocking queries instead of a polling interval
+    // see https://developer.hashicorp.com/nomad/api-docs#blocking-queries
+    async fn poll_job_until_dead(
+        &self,
+        nomad: &Nomad,
+        interval_duration: Duration,
+    ) -> Result<(), ExecutionError> {
+        let mut interval = interval(interval_duration);
 
-// TODO: use blocking queries instead of a polling interval
-// see https://developer.hashicorp.com/nomad/api-docs#blocking-queries
-pub async fn poll_job_until_dead(
-    nomad: &Nomad,
-    job_id: &str,
-    interval_duration: Duration,
-) -> Result<(), ExecutionError> {
-    let mut interval = interval(interval_duration);
+        loop {
+            interval.tick().await;
 
-    loop {
-        interval.tick().await;
+            let job = nomad
+                .job_read(&self.job_id())
+                .await
+                .map_err(|error| ExecutionError::NomadError(error))?;
 
-        let job = nomad
-            .job_read(job_id)
-            .await
-            .map_err(|error| ExecutionError::NomadError(error))?;
-
-        if job.status.as_deref() == Some("dead") {
-            return Ok(());
+            if job.status.as_deref() == Some("dead") {
+                return Ok(());
+            }
         }
     }
 }
@@ -114,7 +98,7 @@ pub async fn get_job_output(
                 ExecutionError::InvalidResponse("Missing termination event".to_string())
             })?;
 
-        return Err(ExecutionError::TimeoutError(
+        return Err(ExecutionError::InvalidResponse(
             termination_event
                 .message
                 .clone()
@@ -136,5 +120,9 @@ pub async fn get_job_output(
         .await
         .map_err(|error| ExecutionError::NomadError(error))?;
 
-    Ok(JobOutput { stdout, stderr })
+    Ok(JobOutput {
+        stdout,
+        stderr,
+        pending: task_state.state.as_deref() != Some("dead"),
+    })
 }
