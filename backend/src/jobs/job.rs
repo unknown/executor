@@ -77,6 +77,14 @@ pub async fn get_job_output(
         .first()
         .ok_or_else(|| ExecutionError::InvalidResponse("No allocations".to_string()))?;
 
+    if allocation.client_status.as_deref() == Some("pending") {
+        return Ok(JobOutput {
+            pending: true,
+            stdout: "".to_string(),
+            stderr: "".to_string(),
+        });
+    }
+
     // TODO: assumes task name is same as job name
     let task_state = allocation
         .task_states
@@ -87,7 +95,8 @@ pub async fn get_job_output(
             ExecutionError::InvalidResponse(format!("Missing task state for {}", job_id))
         })?;
 
-    if task_state.failed == Some(true) {
+    let running = task_state.state.as_deref() != Some("dead");
+    if !running {
         let termination_event = task_state
             .events
             .as_ref()
@@ -98,12 +107,18 @@ pub async fn get_job_output(
                 ExecutionError::InvalidResponse("Missing termination event".to_string())
             })?;
 
-        return Err(ExecutionError::InvalidResponse(
-            termination_event
-                .message
-                .clone()
-                .unwrap_or_else(|| "Job failed".to_string()),
-        ));
+        if task_state.failed == Some(true) {
+            return Err(ExecutionError::InvalidResponse(
+                termination_event
+                    .message
+                    .clone()
+                    .unwrap_or_else(|| "Job failed".to_string()),
+            ));
+        }
+
+        if termination_event.exit_code != Some(0) {
+            return Err(ExecutionError::TimeoutError());
+        }
     }
 
     let alloc_id = allocation
@@ -123,6 +138,6 @@ pub async fn get_job_output(
     Ok(JobOutput {
         stdout,
         stderr,
-        pending: task_state.state.as_deref() != Some("dead"),
+        pending: running,
     })
 }

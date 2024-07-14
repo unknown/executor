@@ -6,4 +6,6 @@ pub enum ExecutionError {
     NomadError(nomad_rs::NomadError),
     #[error("Invalid response: {0}")]
     InvalidResponse(String),
+    #[error("Job timed out")]
+    TimeoutError(),
 }

@@ -32,7 +32,7 @@ job "executor-backend" {
       driver = "docker"
 
       config {
-        image = "dmo1010/executor-backend:0.1.5"
+        image = "dmo1010/executor-backend:0.1.6"
         ports = ["http"]
       }
 
