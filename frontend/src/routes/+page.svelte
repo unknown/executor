@@ -1,36 +1,9 @@
 <script lang="ts">
   import { rust } from '@codemirror/lang-rust';
+  import { PaneGroup, Pane, PaneResizer } from 'paneforge';
   import CodeMirror from 'svelte-codemirror-editor';
-  import { z } from 'zod';
-
-  const submitSchema = z.discriminatedUnion('status', [
-    z.object({
-      status: z.literal('Success'),
-      job_id: z.string(),
-      job_name: z.string()
-    }),
-    z.object({
-      status: z.literal('Error'),
-      error: z.string()
-    })
-  ]);
-
-  const executionOutputSchema = z.discriminatedUnion('status', [
-    z.object({
-      status: z.literal('Success'),
-      output: z.object({
-        pending: z.boolean(),
-        stdout: z.string(),
-        stderr: z.string()
-      })
-    }),
-    z.object({
-      status: z.literal('Error'),
-      error: z.string()
-    })
-  ]);
-
-  type ExecutionOutputResponse = z.infer<typeof executionOutputSchema>;
+  import { submitSchema, executionOutputSchema } from '$lib/schemas';
+  import type { ExecutionOutputResponse } from '$lib/schemas';
 
   let code = '// Rust 1.66\nfn main() {\n    println!("Hello, world!");\n}';
 
@@ -145,28 +118,41 @@
     </div>
   </header>
   <main class="flex min-h-0 flex-1 flex-col">
-    <CodeMirror
-      bind:value={code}
-      lang={rust()}
-      tabSize={4}
-      class="min-h-0 flex-1"
-      styles={{
-        '&': { height: '100%' }
-      }}
-    />
-    <div class="flex h-64 gap-2 whitespace-pre border-t p-2">
-      <div class="flex min-w-0 flex-1 flex-col">
-        <h2 class="mb-1 font-medium">Standard output</h2>
-        <code class="prose flex-1 overflow-auto rounded-md border bg-zinc-50 p-2 text-sm">
-          {stdout}
-        </code>
-      </div>
-      <div class="flex min-w-0 flex-1 flex-col">
-        <h2 class="mb-1 font-medium">Standard error</h2>
-        <code class="prose flex-1 overflow-auto rounded-md border bg-zinc-50 p-2 text-sm">
-          {stderr}
-        </code>
-      </div>
-    </div>
+    <PaneGroup direction="vertical" class="p-2">
+      <Pane defaultSize={70} minSize={20} class="rounded-md border">
+        <CodeMirror
+          bind:value={code}
+          lang={rust()}
+          tabSize={4}
+          class="h-full"
+          styles={{
+            '&': { height: '100%' }
+          }}
+        />
+      </Pane>
+      <PaneResizer class="group relative flex items-center justify-center">
+        <div
+          class="my-1 h-0.5 w-6 rounded-full bg-zinc-200 group-hover:w-full group-hover:bg-blue-500 group-active:w-full group-active:bg-blue-600"
+        />
+      </PaneResizer>
+      <Pane defaultSize={30} minSize={20} collapsible class="flex gap-2">
+        <div class="flex min-w-0 flex-1 flex-col">
+          <h2 class="mb-1 font-medium text-gray-600">Standard output</h2>
+          <code
+            class="prose flex-1 overflow-auto whitespace-pre rounded-md border bg-zinc-50 p-2 text-sm"
+          >
+            {stdout}
+          </code>
+        </div>
+        <div class="flex min-w-0 flex-1 flex-col">
+          <h2 class="mb-1 font-medium text-gray-600">Standard error</h2>
+          <code
+            class="prose flex-1 overflow-auto whitespace-pre rounded-md border bg-zinc-50 p-2 text-sm"
+          >
+            {stderr}
+          </code>
+        </div>
+      </Pane>
+    </PaneGroup>
   </main>
 </div>
