@@ -4,23 +4,22 @@
   import { PaneGroup, Pane, PaneResizer } from 'paneforge';
   import CodeMirror from 'svelte-codemirror-editor';
   import { submitSchema, executionOutputSchema } from '$lib/schemas';
-  import type { ExecutionOutputResponse } from '$lib/schemas';
+  import type { ExecutionOutputResponse, SubmitResponse } from '$lib/schemas';
 
   let code = '// Rust 1.66\nfn main() {\n    println!("Hello, world!");\n}';
 
   let pending = false;
-  let output: ExecutionOutputResponse | null = null;
-  let job_id: string | null = null;
-  let job_name: string | null = null;
-  let interval: number | null = null;
+  let outputResponse: ExecutionOutputResponse | null = null;
+  let submitResponse: SubmitResponse | null = null;
+  let errorMessage: string | null = null;
 
   async function submitCode() {
     pending = true;
-    output = null;
-    job_id = null;
-    job_name = null;
+    outputResponse = null;
+    submitResponse = null;
+    errorMessage = null;
     try {
-      const response = await fetch('/api/submit', {
+      submitResponse = await fetch('/api/submit', {
         method: 'POST',
         body: JSON.stringify({ code })
       })
@@ -32,75 +31,59 @@
         })
         .then((response) => submitSchema.parse(response));
 
-      if (response.status === 'Error') {
+      if (submitResponse?.status !== 'Success') {
         pending = false;
         return;
       }
 
-      job_id = response.job_id;
-      job_name = response.job_name;
-      interval = setInterval(pollOutput, 1000);
+      pollOutput();
     } catch (error) {
-      console.error(error);
+      errorMessage = String(error);
       pending = false;
-      output =
-        error instanceof Error
-          ? {
-              status: 'Error',
-              error: error.message
-            }
-          : null;
     }
   }
 
   async function pollOutput() {
-    if (interval === null) {
-      return;
-    }
-
-    if (job_id === null || job_name === null) {
-      clearInterval(interval);
-      return;
-    }
-
-    try {
-      output = await fetch(`/api/status/${job_name}/${job_id}`, {
-        method: 'GET'
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error('API response not ok');
-          }
-          return response.json();
-        })
-        .then((response) => executionOutputSchema.parse(response));
-    } catch (error) {
-      console.error(error);
-      output =
-        error instanceof Error
-          ? {
-              status: 'Error',
-              error: error.message
-            }
-          : null;
-    }
-
+    pending = true;
     if (
-      output?.status === 'Error' ||
-      (output?.status === 'Success' && output.output.pending === false)
+      submitResponse?.status === 'Success' &&
+      submitResponse.job_id !== null &&
+      submitResponse.job_name !== null
     ) {
-      pending = false;
-      clearInterval(interval);
+      const { job_name, job_id } = submitResponse;
+      try {
+        outputResponse = await fetch(`/api/status/${job_name}/${job_id}`, {
+          method: 'GET'
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error('API response not ok');
+            }
+            return response.json();
+          })
+          .then((response) => executionOutputSchema.parse(response));
+      } catch (error) {
+        errorMessage = String(error);
+      }
+
+      if (outputResponse?.status === 'Success' && outputResponse.output.pending) {
+        setTimeout(pollOutput, 1000);
+        return;
+      }
     }
+
+    pending = false;
   }
 
-  $: stdout = output?.status === 'Success' ? output.output.stdout : '';
+  $: stdout = outputResponse?.status === 'Success' ? outputResponse.output.stdout : '';
   $: stderr =
-    output?.status === 'Success'
-      ? output.output.stderr
-      : output?.status === 'Error'
-        ? output.error
-        : '';
+    errorMessage !== null
+      ? errorMessage
+      : outputResponse?.status === 'Success'
+        ? outputResponse.output.stderr
+        : outputResponse?.status === 'Error'
+          ? outputResponse.error
+          : '';
 </script>
 
 <div class="flex h-screen flex-col">
