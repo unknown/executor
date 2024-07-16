@@ -125,14 +125,14 @@
         />
       </PaneResizer>
       <Pane defaultSize={30} minSize={20} collapsible class="rounded-md border bg-white">
-        <div class="flex h-full gap-3 p-3">
-          <div class="flex min-w-0 flex-1 flex-col">
+        <div class="flex h-full flex-col gap-3 p-3 md:flex-row">
+          <div class="flex min-h-0 min-w-0 flex-1 flex-col">
             <h2 class="mb-1 font-medium text-gray-600">Standard output</h2>
             <code class="flex-1 overflow-auto whitespace-pre rounded-md bg-zinc-100 p-2 text-sm">
               {stdout}
             </code>
           </div>
-          <div class="flex min-w-0 flex-1 flex-col">
+          <div class="flex min-h-0 min-w-0 flex-1 flex-col">
             <h2 class="mb-1 font-medium text-gray-600">Standard error</h2>
             <code class="flex-1 overflow-auto whitespace-pre rounded-md bg-zinc-100 p-2 text-sm">
               {stderr}
