@@ -1,6 +1,7 @@
 <script lang="ts">
   import { rust } from '@codemirror/lang-rust';
-  import { Loader2, Play } from 'lucide-svelte';
+  import { Dialog } from 'bits-ui';
+  import { Loader2, Play, Settings } from 'lucide-svelte';
   import { PaneGroup, Pane, PaneResizer } from 'paneforge';
   import CodeMirror from 'svelte-codemirror-editor';
   import { submitSchema, executionOutputSchema } from '$lib/schemas';
@@ -89,21 +90,43 @@
 <div class="flex h-screen flex-col">
   <header class="flex-shrink-0 border-b p-2">
     <div class="flex items-center justify-between">
-      <h1 class="text-lg font-medium">Executor</h1>
-      <form>
-        <button
-          class="inline-flex items-center justify-center rounded-md bg-green-500 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:bg-green-400"
-          on:click={submitCode}
-          disabled={pending}
-        >
-          {#if pending}
-            <Loader2 class="mr-2 size-4 animate-spin" />
-          {:else}
-            <Play class="mr-2 size-4" />
-          {/if}
-          Run
-        </button>
-      </form>
+      <div>
+        <h1 class="font-medium">Executor</h1>
+      </div>
+      <div>
+        <form>
+          <button
+            class="inline-flex items-center justify-center rounded-md bg-green-500 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:bg-green-400"
+            on:click={submitCode}
+            disabled={pending}
+          >
+            {#if pending}
+              <Loader2 class="mr-2 size-4 animate-spin" />
+            {:else}
+              <Play class="mr-2 size-4" />
+            {/if}
+            Run
+          </button>
+        </form>
+      </div>
+      <div>
+        <Dialog.Root>
+          <Dialog.Trigger
+            class="inline-flex items-center justify-center rounded-md px-2 py-2 text-sm transition-colors hover:bg-zinc-200"
+          >
+            <Settings class="size-4" />
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay class="fixed inset-0 z-50 bg-black/80" />
+            <Dialog.Content
+              class="fixed left-[50%] top-[50%] z-50 w-full max-w-xl translate-x-[-50%] translate-y-[-50%] rounded-md border bg-white p-2"
+            >
+              <Dialog.Title>Settings</Dialog.Title>
+              <Dialog.Description>Test</Dialog.Description>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      </div>
     </div>
   </header>
   <main class="flex min-h-0 flex-1 flex-col bg-zinc-100">
