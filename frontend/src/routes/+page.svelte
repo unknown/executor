@@ -13,6 +13,13 @@
   let outputResponse: ExecutionOutputResponse | null = null;
   let submitResponse: SubmitResponse | null = null;
   let errorMessage: string | null = null;
+  let runtime = 'node';
+  let maxExecutionTime = 300;
+
+  async function saveSettings() {
+    const settings = { runtime, maxExecutionTime };
+    localStorage.setItem('executor-settings', JSON.stringify(settings));
+  }
 
   async function submitCode() {
     pending = true;
@@ -122,7 +129,43 @@
               class="fixed left-[50%] top-[50%] z-50 w-full max-w-xl translate-x-[-50%] translate-y-[-50%] rounded-md border bg-white p-2"
             >
               <Dialog.Title>Settings</Dialog.Title>
-              <Dialog.Description>Test</Dialog.Description>
+              <Dialog.Description>Configure execution settings</Dialog.Description>
+              <div class="space-y-2 mt-2">
+                <label for="runtime-select" class="block text-sm font-medium text-zinc-700">
+                  Runtime
+                </label>
+                <select
+                  id="runtime-select"
+                  bind:value={runtime}
+                  class="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                >
+                  <option value="node">Node.js</option>
+                  <option value="bun">Bun</option>
+                  <option value="deno">Deno</option>
+                </select>
+              </div>
+              <div class="space-y-2 mt-4">
+                <label for="max-execution-time" class="block text-sm font-medium text-zinc-700">
+                  Max execution time (seconds)
+                </label>
+                <input
+                  id="max-execution-time"
+                  type="number"
+                  bind:value={maxExecutionTime}
+                  min="0"
+                  class="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="300"
+                />
+              </div>
+              <div class="mt-4 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  on:click={saveSettings}
+                  class="inline-flex items-center justify-center rounded-md border border-zinc-300 px-3.5 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50"
+                >
+                  Save
+                </button>
+              </div>
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog.Root>
