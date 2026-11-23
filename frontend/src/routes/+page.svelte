@@ -1,6 +1,7 @@
 <script lang="ts">
   import { rust } from '@codemirror/lang-rust';
-  import { Loader2, Play } from 'lucide-svelte';
+  import { Dialog } from 'bits-ui';
+  import { Loader2, Play, Settings } from 'lucide-svelte';
   import { PaneGroup, Pane, PaneResizer } from 'paneforge';
   import CodeMirror from 'svelte-codemirror-editor';
   import { submitSchema, executionOutputSchema } from '$lib/schemas';
@@ -12,6 +13,13 @@
   let outputResponse: ExecutionOutputResponse | null = null;
   let submitResponse: SubmitResponse | null = null;
   let errorMessage: string | null = null;
+  let runtime = 'node';
+  let maxExecutionTime = 300;
+
+  async function saveSettings() {
+    const settings = { runtime, maxExecutionTime };
+    localStorage.setItem('executor-settings', JSON.stringify(settings));
+  }
 
   async function submitCode() {
     pending = true;
@@ -89,21 +97,79 @@
 <div class="flex h-screen flex-col">
   <header class="flex-shrink-0 border-b p-2">
     <div class="flex items-center justify-between">
-      <h1 class="text-lg font-medium">Executor</h1>
-      <form>
-        <button
-          class="inline-flex items-center justify-center rounded-md bg-green-500 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:bg-green-400"
-          on:click={submitCode}
-          disabled={pending}
-        >
-          {#if pending}
-            <Loader2 class="mr-2 size-4 animate-spin" />
-          {:else}
-            <Play class="mr-2 size-4" />
-          {/if}
-          Run
-        </button>
-      </form>
+      <div>
+        <h1 class="font-medium">Executor</h1>
+      </div>
+      <div>
+        <form>
+          <button
+            class="inline-flex items-center justify-center rounded-md bg-green-500 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-green-600 disabled:bg-green-400"
+            on:click={submitCode}
+            disabled={pending}
+          >
+            {#if pending}
+              <Loader2 class="mr-2 size-4 animate-spin" />
+            {:else}
+              <Play class="mr-2 size-4" />
+            {/if}
+            Run
+          </button>
+        </form>
+      </div>
+      <div>
+        <Dialog.Root>
+          <Dialog.Trigger
+            class="inline-flex items-center justify-center rounded-md px-2 py-2 text-sm transition-colors hover:bg-zinc-200"
+          >
+            <Settings class="size-4" />
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay class="fixed inset-0 z-50 bg-black/80" />
+            <Dialog.Content
+              class="fixed left-[50%] top-[50%] z-50 w-full max-w-xl translate-x-[-50%] translate-y-[-50%] rounded-md border bg-white p-2"
+            >
+              <Dialog.Title>Settings</Dialog.Title>
+              <Dialog.Description>Configure execution settings</Dialog.Description>
+              <div class="space-y-2 mt-2">
+                <label for="runtime-select" class="block text-sm font-medium text-zinc-700">
+                  Runtime
+                </label>
+                <select
+                  id="runtime-select"
+                  bind:value={runtime}
+                  class="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                >
+                  <option value="node">Node.js</option>
+                  <option value="bun">Bun</option>
+                  <option value="deno">Deno</option>
+                </select>
+              </div>
+              <div class="space-y-2 mt-4">
+                <label for="max-execution-time" class="block text-sm font-medium text-zinc-700">
+                  Max execution time (seconds)
+                </label>
+                <input
+                  id="max-execution-time"
+                  type="number"
+                  bind:value={maxExecutionTime}
+                  min="0"
+                  class="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  placeholder="300"
+                />
+              </div>
+              <div class="mt-4 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  on:click={saveSettings}
+                  class="inline-flex items-center justify-center rounded-md border border-zinc-300 px-3.5 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50"
+                >
+                  Save
+                </button>
+              </div>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
+      </div>
     </div>
   </header>
   <main class="flex min-h-0 flex-1 flex-col bg-zinc-100">
